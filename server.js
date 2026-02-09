@@ -11,6 +11,15 @@ const HTTP_PORT = process.env.PORT || 8080;
 app.use(cors());
 app.use(express.json());
 
+// ensure the model is initialized before any route runs
+let initialized = false;
+async function initOnce() {
+  if (!initialized) {
+    await dataService.initialize();
+    initialized = true;
+  }
+}
+
 app.get("/", (req, res) => {
   res.json({
     message: "API Listening",
@@ -19,6 +28,16 @@ app.get("/", (req, res) => {
     learnID: "cokonkwo8"
   });
 });
+
+app.use(async (req, res, next) => {
+  try {
+    await initOnce();
+    next();
+  } catch (err) {
+    res.status(500).json({ message: err.message || "Database initialization failed" });
+  }
+});
+
 // add a new site
 app.post("/api/sites", async (req, res) => {
   try {
@@ -95,24 +114,6 @@ app.use((req, res) => {
   res.status(404).json({ message: "Resource not found" });
 });
 
-// Start server
-let initialized = false;
-
-async function initOnce() {
-  if (!initialized) {
-    await dataService.initialize();
-    initialized = true;
-  }
-}
-// Ensure DB is initialized before any route runs
-app.use(async (req, res, next) => {
-  try {
-    await initOnce();
-    next();
-  } catch (err) {
-    res.status(500).json({ message: err.message || "Database initialization failed" });
-  }
-});
 // Only listen locally
 if (process.env.VERCEL !== "1") {
   dataService.initialize()
