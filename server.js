@@ -96,10 +96,32 @@ app.use((req, res) => {
 });
 
 // Start server
-dataService.initialize().then(() => {
-    app.listen(HTTP_PORT, () => {
-      console.log(`server listening on: ${HTTP_PORT}`);
-    });
-  }).catch((err) => {
-    console.log(err);
-  });
+let initialized = false;
+
+async function initOnce() {
+  if (!initialized) {
+    await dataService.initialize();
+    initialized = true;
+  }
+}
+// Ensure DB is initialized before any route runs
+app.use(async (req, res, next) => {
+  try {
+    await initOnce();
+    next();
+  } catch (err) {
+    res.status(500).json({ message: err.message || "Database initialization failed" });
+  }
+});
+// Only listen locally
+if (process.env.VERCEL !== "1") {
+  dataService.initialize()
+    .then(() => {
+      app.listen(HTTP_PORT, () => {
+        console.log(`server listening on: ${HTTP_PORT}`);
+      });
+    })
+    .catch((err) => console.log(err));
+}
+
+module.exports = app;
