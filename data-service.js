@@ -1,69 +1,146 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+
 const siteSchema = require("./modules/siteSchema");
+const userSchema = require("./modules/userSchema");
 
 let mongoDBConnectionString = process.env.MONGO_URL;
 
 let Site;
+let User;
 
-
+/*************************
+ * Database Initialization
+ *************************/
 module.exports.initialize = function () {
   return new Promise(function (resolve, reject) {
-      const db = mongoose.createConnection(mongoDBConnectionString);
+    const db = mongoose.createConnection(mongoDBConnectionString);
 
-      db.on('error', err => {
-          reject(err);
-      });
+    db.on('error', err => reject(err));
 
-      db.once('open', () => {
-          Site = db.model("sites", siteSchema);
-          // User = db.model("users", userSchema);
-          resolve();
-      });
+    db.once('open', () => {
+      Site = db.model("sites", siteSchema);
+      User = db.model("users", userSchema);
+      resolve();
+    });
   });
 };
 
-module.exports.addNewSite = async function (data)  {
+/*SITES FUNCTIONS*/
+module.exports.addNewSite = async function (data) {
   const newSite = new Site(data);
   await newSite.save();
   return newSite;
-}
+};
 
-module.exports.getAllSites = async function (page, perPage, name, description, year, town, provinceOrTerritoryCode) {
+module.exports.getAllSites = async function (
+  page,
+  perPage,
+  name,
+  description,
+  year,
+  town,
+  provinceOrTerritoryCode
+) {
   let findBy = {};
+
   if (name) {
-    findBy = { "siteName": { "$regex": name, "$options": "i" } }; // contains, case insensitive
-  } 
+    findBy.siteName = { $regex: name, $options: "i" };
+  }
   if (description) {
-    findBy = { ...findBy, "description": { "$regex": description, "$options": "i" } }; // contains, case insensitive
-  } 
+    findBy.description = { $regex: description, $options: "i" };
+  }
   if (year) {
-    findBy = { ...findBy,  "dates.year": year };
-  } 
+    findBy["dates.year"] = year;
+  }
   if (town) {
-    findBy = { ...findBy, "location.town": { "$regex": town, "$options": "i" } }; // contains, case insensitive
-  } 
+    findBy["location.town"] = { $regex: town, $options: "i" };
+  }
   if (provinceOrTerritoryCode) {
-    findBy = { ...findBy, "provinceOrTerritory.code": provinceOrTerritoryCode }; 
-  } ;
-
-  console.log("findBy:", findBy);
-
-  if (+page && +perPage) {
-    return Site.find(findBy).sort({ siteName: 1 }).skip((page - 1) * +perPage).limit(+perPage).exec();
+    findBy["provinceOrTerritory.code"] = provinceOrTerritoryCode;
   }
 
-  return Promise.reject(new Error('page and perPage query parameters must be valid numbers'));
-}
+  return Site.find(findBy)
+    .sort({ siteName: 1 })
+    .skip((page - 1) * perPage)
+    .limit(perPage)
+    .exec();
+};
 
 module.exports.getSiteById = async function (id) {
   return Site.findById(id).exec();
-  // return Site.findOne({ _id: id }).exec(); // both work
-}
+};
 
 module.exports.updateSiteById = async function (data, id) {
   return Site.updateOne({ _id: id }, { $set: data }).exec();
-}
+};
 
 module.exports.deleteSiteById = async function (id) {
   return Site.deleteOne({ _id: id }).exec();
-}
+};
+
+/*USER FUNCTIONS*/
+module.exports.registerUser = function (userData) {
+  return new Promise((resolve, reject) => {
+    if (userData.password !== userData.password2) {
+      reject("Passwords do not match");
+    } else {
+      bcrypt.hash(userData.password, 10)
+        .then(hash => {
+          userData.password = hash;
+          let newUser = new User(userData);
+
+          newUser.save()
+            .then(() => resolve(`User ${userData.userName} successfully registered`))
+            .catch(err => {
+              if (err.code === 11000) {
+                reject("User Name already taken");
+              } else {
+                reject("Error creating the user: " + err);
+              }
+            });
+        })
+        .catch(err => reject(err));
+    }
+  });
+};
+
+module.exports.checkUser = function (userData) {
+  return new Promise((resolve, reject) => {
+    User.findOne({ userName: userData.userName })
+      .exec()
+      .then(user => {
+        bcrypt.compare(userData.password, user.password).then(result => {
+          if (result) resolve(user);
+          else reject("Incorrect password for user " + userData.userName);
+        });
+      })
+      .catch(() => reject("Unable to find user " + userData.userName));
+  });
+};
+
+module.exports.getFavourites = function (id) {
+  return User.findById(id)
+    .exec()
+    .then(user => user.favourites);
+};
+
+module.exports.addFavourite = function (id, favId) {
+  return User.findByIdAndUpdate(
+    id,
+    { $addToSet: { favourites: favId } },
+    { new: true }
+  )
+    .exec()
+    .then(user => user.favourites);
+};
+
+module.exports.removeFavourite = function (id, favId) {
+  return User.findByIdAndUpdate(
+    id,
+    { $pull: { favourites: favId } },
+    { new: true }
+  )
+    .exec()
+    .then(user => user.favourites);
+};
