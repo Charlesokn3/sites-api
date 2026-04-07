@@ -71,7 +71,7 @@ app.get("/", (req, res) => {
 });
 
 // register a new user
-app.post("/api/user/register", async (req, res) => {
+app.post("/user/register", async (req, res) => {
   try {
     const msg = await dataService.registerUser(req.body);
     res.json({ message: msg });
@@ -81,7 +81,7 @@ app.post("/api/user/register", async (req, res) => {
 });
 
 // login user
-app.post("/api/user/login", async (req, res) => {
+app.post("/user/login", async (req, res) => {
   try {
     const user = await dataService.checkUser(req.body);
     const payload = {
@@ -99,7 +99,7 @@ app.post("/api/user/login", async (req, res) => {
 });
 
 // get user favourites (protected)
-app.get("/api/user/favourites",
+app.get("/user/favourites",
   passport.authenticate("jwt", { session: false }),
   async (req, res) => {
     try {
@@ -112,7 +112,7 @@ app.get("/api/user/favourites",
 );
 
 // add a favourite (protected)
-app.put("/api/user/favourites/:id",
+app.put("/user/favourites/:id",
   passport.authenticate("jwt", { session: false }),
   async (req, res) => {
     try {
@@ -125,7 +125,7 @@ app.put("/api/user/favourites/:id",
 );
 
 // remove a favourite (protected)
-app.delete("/api/user/favourites/:id",
+app.delete("/user/favourites/:id",
   passport.authenticate("jwt", { session: false }),
   async (req, res) => {
     try {
@@ -140,7 +140,7 @@ app.delete("/api/user/favourites/:id",
 
 // add a new site (PROTECTED)
 app.post(
-  "/api/sites",
+  "/sites",
   passport.authenticate("jwt", { session: false }),
   async (req, res) => {
     try {
@@ -153,7 +153,7 @@ app.post(
 );
 
 // get sites (PUBLIC)
-app.get("/api/sites", async (req, res) => {
+app.get("/sites", async (req, res) => {
   const { page, perPage, name, description, year, town, provinceOrTerritoryCode } = req.query;
 
   const pageNum = parseInt(page);
@@ -180,7 +180,7 @@ app.get("/api/sites", async (req, res) => {
 });
 
 // get site by id (PUBLIC)
-app.get("/api/sites/:id", async (req, res) => {
+app.get("/sites/:id", async (req, res) => {
   try {
     const site = await dataService.getSiteById(req.params.id);
     if (!site) return res.status(404).json({ message: "Site not found" });
@@ -192,7 +192,7 @@ app.get("/api/sites/:id", async (req, res) => {
 
 // update site (PROTECTED)
 app.put(
-  "/api/sites/:id",
+  "/sites/:id",
   passport.authenticate("jwt", { session: false }),
   async (req, res) => {
     try {
@@ -206,7 +206,7 @@ app.put(
 
 // delete site (PROTECTED)
 app.delete(
-  "/api/sites/:id",
+  "/sites/:id",
   passport.authenticate("jwt", { session: false }),
   async (req, res) => {
     try {
