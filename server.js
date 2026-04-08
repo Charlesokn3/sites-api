@@ -23,20 +23,25 @@ const jwt = require("jsonwebtoken");
 
 const dataService = require("./data-service");
 
-dataService.initialize()
-  .then(() => {
-    console.log("Data service initialized");
-  })
-  .catch(err => {
-    console.error("Failed to initialize data service:", err);
-  });
-
 const app = express();
 const HTTP_PORT = process.env.PORT || 8080;
+
+// Cache the init promise so it's only called once and every request awaits it
+const initPromise = dataService.initialize();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Ensure DB is ready before any route runs
+app.use(async (_req, res, next) => {
+  try {
+    await initPromise;
+    next();
+  } catch (err) {
+    res.status(500).json({ message: "Database initialization failed: " + err });
+  }
+});
 
 // JWT / Passport Setup
 const ExtractJwt = passportJWT.ExtractJwt;
