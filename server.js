@@ -236,10 +236,4 @@ app.use((req, res) => {
   res.status(404).json({ message: "Resource not found" });
 });
 
-if (!process.env.VERCEL) {
-  app.listen(HTTP_PORT, () => {
-    console.log(`Server listening on port ${HTTP_PORT}`);
-  });
-}
-
 module.exports = app;
