@@ -9,9 +9,8 @@ let mongoDBConnectionString = process.env.MONGO_URL;
 let Site;
 let User;
 
-/*************************
- * Database Initialization
- *************************/
+// Database Initialization
+
 module.exports.initialize = function () {
   return new Promise(function (resolve, reject) {
     const db = mongoose.createConnection(mongoDBConnectionString);
