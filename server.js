@@ -64,7 +64,7 @@ app.post("/api/user/register", async (req, res) => {
     const msg = await dataService.registerUser(req.body);
     res.json({ message: msg });
   } catch (err) {
-    res.status(422).json({ message: err });
+    res.status(422).json({ message: err.toString() });
   }
 });
 
