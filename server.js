@@ -23,6 +23,14 @@ const jwt = require("jsonwebtoken");
 
 const dataService = require("./data-service");
 
+dataService.initialize()
+  .then(() => {
+    console.log("Data service initialized");
+  })
+  .catch(err => {
+    console.error("Failed to initialize data service:", err);
+  });
+
 const app = express();
 const HTTP_PORT = process.env.PORT || 8080;
 
@@ -228,13 +236,10 @@ app.use((req, res) => {
   res.status(404).json({ message: "Resource not found" });
 });
 
-// Start Server
-dataService.initialize()
-  .then(() => {
-    app.listen(HTTP_PORT, () => {
-      console.log(`Server listening on port ${HTTP_PORT}`);
-    });
-  })
-  .catch(err => console.log(err));
+if (!process.env.VERCEL) {
+  app.listen(HTTP_PORT, () => {
+    console.log(`Server listening on port ${HTTP_PORT}`);
+  });
+}
 
 module.exports = app;
