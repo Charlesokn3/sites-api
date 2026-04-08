@@ -85,7 +85,7 @@ app.post("/api/user/login", async (req, res) => {
       token: token
     });
   } catch (err) {
-    res.status(401).json({ message: err });
+    res.status(401).json({ message: err.toString() });
   }
 });
 
